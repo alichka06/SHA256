@@ -53,6 +53,20 @@ public:
         return words_to_string();
     }
 
+    vector<uint8_t> compressedVector(vector<uint8_t> block) {
+        block = pad_to_512bits(block);
+
+        for (int i = 0; i < block.size()/64; ++i) {
+            vector<uint8_t> subvector(block.begin() + i*64, block.begin()+(i+1)*64);
+
+            vector<uint32_t> words = to_words(subvector);
+
+            hashing(words);
+        }
+
+        return to_bytes();
+    }
+
 private:
     uint32_t H[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
                      0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
@@ -141,7 +155,7 @@ private:
 
         return output;
     }
-    void hashing(vector<uint32_t> X) {
+    void hashing(vector<uint32_t>& X) {
         for (int i = 16; i < 64; ++i) {
             X.push_back(s1(X[i-2]) + X[i-7] + s0(X[i-15]) + X[i-16]);
         }
@@ -174,6 +188,22 @@ private:
             ans += result;
         }
         return ans;
+    }
+
+
+    void from_word(uint32_t w, vector<uint8_t>& ar, int i) {
+        ar[i + 0] = w;
+        ar[i + 1] = w >> 8;
+        ar[i + 2] = w >> 16;
+        ar[i + 3] = w >> 24;
+    }
+
+    vector<uint8_t> to_bytes() {
+        vector<uint8_t> ar(8*4);
+        for (int i = 0; i < 8; i ++) {
+            from_word(H[i], ar, i*4);
+        }
+        return ar;
     }
 };
 
